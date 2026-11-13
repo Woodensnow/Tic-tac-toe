@@ -1,64 +1,111 @@
-def is_win(game):
-    win = False
-    # rows
-    if game[0][0] == game[0][1] == game[0][2] and (game[0][0] == 'X' or game[0][0] == 'O'):
-        win = True
-    if game[1][0] == game[1][1] == game[1][2] and (game[1][0] == 'X' or game[1][0] == 'O'):
-        win = True
-    if game[2][0] == game[2][1] == game[2][2] and (game[2][0] == 'X' or game[2][0] == 'O'):
-        win = True
-    # columns
-    if game[0][0] == game[1][0] == game[2][0] and (game[0][0] == 'X' or game[0][0] == 'O'):
-        win = True
-    if game[0][1] == game[1][1] == game[2][1] and (game[0][1] == 'X' or game[0][1] == 'O'):
-        win = True
-    if game[0][2] == game[1][2] == game[2][2] and (game[0][2] == 'X' or game[0][2] == 'O'):
-        win = True
-    # diagonals
-    if game[0][0] == game[1][1] == game[2][2] and (game[0][0] == 'X' or game[0][0] == 'O'):
-        win = True
-    if game[0][2] == game[1][1] == game[2][0] and (game[0][2] == 'X' or game[0][2] == 'O'):
-        win = True
-    return win
+"""Tic-tac-toe (noughts and crosses) - corrected version for the group review.
+
+Two players share one keyboard.  Player 1 is 'X' and always moves first,
+Player 2 is 'O'.  A move is typed as "row column", both numbers in 1..3.
+The program prints "Win!" as soon as a row, a column or a diagonal is
+complete, or "Tie!" when all nine cells are full and nobody has won.
+
+Run:  python3 tic-tac-toe
+Test: python3 -m unittest test_songyiying -v
+"""
+
+EMPTY = " "
+PLAYER_1 = "X"
+PLAYER_2 = "O"
+
+# The eight winning lines, as data rather than eight copied if-statements.
+WIN_LINES = (
+    ((0, 0), (0, 1), (0, 2)),  # row 0
+    ((1, 0), (1, 1), (1, 2)),  # row 1
+    ((2, 0), (2, 1), (2, 2)),  # row 2
+    ((0, 0), (1, 0), (2, 0)),  # column 0
+    ((0, 1), (1, 1), (2, 1)),  # column 1
+    ((0, 2), (1, 2), (2, 2)),  # column 2
+    ((0, 0), (1, 1), (2, 2)),  # main diagonal
+    ((0, 2), (1, 1), (2, 0)),  # anti-diagonal
+)
+
+
+def is_win(board):
+    """Return True if a row, a column or a diagonal has three equal marks."""
+    for line in WIN_LINES:
+        a, b, c = (board[r][c] for r, c in line)
+        if a != EMPTY and a == b == c:
+            return True
+    return False
+
+
+def read_move(board, prompt):
+    """Read one legal move and return it as zero-based (row, column).
+
+    Re-asks until the input is two whole numbers in 1..3 and the chosen
+    cell is still empty.
+    """
+    while True:
+        try:
+            parts = input(prompt).split()
+        except EOFError:  # Ctrl-D ends the session instead of crashing it.
+            print("\nInput closed - stopping the game.")
+            raise SystemExit(0)
+
+        if len(parts) != 2:
+            print("Please enter two integers, for example: 2 3")
+            continue
+
+        try:
+            row, col = int(parts[0]), int(parts[1])
+        except ValueError:
+            print("Row and column must be whole numbers.")
+            continue
+
+        # Reject anything outside 1..3 before touching the board: negative
+        # numbers would otherwise mean "from the end" in Python.
+        if not (1 <= row <= 3 and 1 <= col <= 3):
+            print("Row and column must be between 1 and 3.")
+            continue
+
+        # Humans count 1..3, Python lists count 0..2.
+        row, col = row - 1, col - 1
+
+        # A marked cell may not be played again.
+        if board[row][col] != EMPTY:
+            print("That cell is already taken. Choose another one.")
+            continue
+
+        return row, col
+
+
+def print_board(board):
+    """Print the 3x3 board, one row per line."""
+    for row in board:
+        print(" ".join(row))
 
 
 def main():
-    # Initialize the game board
-    game = [[' ' for _ in range(3)] for _ in range(3)]
-    player1 = 'X'
-    player2 = 'O'
-    turn = True  # False for player 1's turn, True for player 2's turn
+    board = [[EMPTY] * 3 for _ in range(3)]
 
     print("X = Player 1")
     print("O = Player 2")
 
-    for n in range(9):
-        turn = not turn  # Toggle turn
-
-        if turn == False:
-            print("Player 1: ", end="")
+    for move in range(9):
+        # Even moves are Player 1's, odd moves are Player 2's.
+        if move % 2 == 0:
+            mark, player = PLAYER_1, "Player 1"
         else:
-            print("Player 2: ", end="")
+            mark, player = PLAYER_2, "Player 2"
 
-        print("Which cell to mark? i:[1..3], j:[1..3]")
-        i, j = map(int, input().split())
+        row, col = read_move(board, f"{player} ({mark}) - row col [1..3]: ")
+        board[row][col] = mark
 
-        if turn == False:
-            game[i][j] = 'X'
-        else:
-            game[i][j] = 'O'
+        if is_win(board):
+            print("Win!")  # the message required by the specification
+            print(f"{player} ({mark}) wins.")
+            print_board(board)
+            return
 
-        if is_win(game):
-            print("Win!")
-            break
-
-    if n == 8:  # All 9 cells have been filled (n goes 0 to 8)
-        print("Tie!")
-
-    # Show the game to console
-    print(game[0][0] + " " + game[0][1] + " " + game[0][2])
-    print(game[1][0] + " " + game[1][1] + " " + game[1][2])
-    print(game[2][0] + " " + game[2][1] + " " + game[2][2])
+    # Only reached when all nine moves were played without a win.
+    print("Tie!")
+    print_board(board)
 
 
 if __name__ == "__main__":
